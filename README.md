@@ -5,7 +5,7 @@ AirCore is and ESP8266 based, open source WiFi module in a compact and lightweig
 For now, the firmware is in development stage, so only the libraries I use are included. Once it's complete, I'll post the project code entirely. 
 
 ##Utilities##
-All the tools I use are included in the Utilities folder of this project. For now, it's only the gzipping and minifying utility which is used to minify the webpages which will be served by the ESP8266. A manual for the utility is included in the index.htm file.
+All the tools I use are included in the Utilities folder of this project. For now, it's only the gzipping and minifying utility which is used to compress the webpages which will be served by the ESP8266. A manual for the utility is included in the index.htm file.
 
 ###Beware! This is not an IoT project###
 
