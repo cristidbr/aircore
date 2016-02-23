@@ -1,3 +1,1 @@
-npm install clean-css
-npm install uglify-js
-npm install html-minifier
+npm install clean-css uglify-js html-minifier
