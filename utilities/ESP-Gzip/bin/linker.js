@@ -199,7 +199,7 @@ function minifyResources( resources )
  */\r\n";
         cfname = 'webcontent_' + cfname.replace( '.', '_' );
         cfile += "#define " + cfname.toUpperCase() + "_LENGTH    " + file.length + "\r\n\r\n";
-        cfile += "static char " + cfname + "[ " + file.length + " ] = { ";
+        cfile += "static const char " + cfname + "[ " + file.length + " ] = { ";
         buf = new Buffer( file );
 		
         for( var j = 0; j < file.length ; j++ ) {
