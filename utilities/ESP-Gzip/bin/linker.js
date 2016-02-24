@@ -67,8 +67,8 @@ function cleanDirectory( path, directory )
 
 function minifyResources( resources )
 {
-    var minifyHTML = require( "html-minifier" ), minifyCSS = require( "clean-css" ), minifyJS = require( "uglify-js" ), fs = require( 'fs' );
-    var shell = require( "child_process" ), compress = "7za a ", compress_cmd = [];
+    var minifyHTML = require( "html-minifier" ), minifyCSS = require( "clean-css" ), minifyJS = require( "uglify-js" ), fs = require( 'fs' ), zlibCompress = require( "zlib" );
+    var shell = require( "child_process" ), compress_cmd = [];
     var file, html = resources.html, css = resources.css, js = resources.js, minified, fname;
     var script_regex = /<script(.+?)>(\s)*?<\/script>/g, match, attr, location, href, aux, index;
     var css_regex = /<link(.+)>/g
@@ -150,7 +150,7 @@ function minifyResources( resources )
 			}
         
         fs.writeFileSync( minifyPath + fname, file, 'ascii' );      
-        compress_cmd.push( compress + ( compressPath + fname + '.gz' ) + " -tgzip -si < " + ( minifyPath + fname ) );
+        compress_cmd.push( [ ( compressPath + fname + '.gz' ), ( minifyPath + fname ) ] );
         generate_cfiles.push( compressPath + fname + '.gz' );
     }
     
@@ -163,7 +163,7 @@ function minifyResources( resources )
             minified = new minifyCSS().minify( file ).styles;
             fs.writeFileSync( minifyPath + fname, minified, 'ascii' );
 
-            compress_cmd.push( compress + ( compressPath + "css_" + css[ i ].replace( "css/", "" ) + '.gz' ) + " -tgzip -si < " + ( minifyPath + fname ) );
+            compress_cmd.push( [ ( compressPath + "css_" + css[ i ].replace( "css/", "" ) + '.gz' ), ( minifyPath + fname ) ] );
             generate_cfiles.push( compressPath + "css_" + css[ i ].replace( "css/", "" ) + '.gz' );
         }
     }
@@ -176,17 +176,19 @@ function minifyResources( resources )
             minified = minifyJS.minify( sourcePath + js[ i ] );
             fs.writeFileSync( minifyPath + fname, minified.code, 'ascii' );
 
-            compress_cmd.push( compress + ( compressPath + "js_" + js[ i ].replace( "js/", "" ) + '.gz' ) + " -tgzip -si < " + ( minifyPath + fname ) );
+            compress_cmd.push( [ ( compressPath + "js_" + js[ i ].replace( "js/", "" ) + '.gz' ), ( minifyPath + fname ) ] );
             generate_cfiles.push( compressPath + "js_" + js[ i ].replace( "js/", "" ) + '.gz' );
         }
     }
  
     for( var i in compress_cmd ) {
-		shell.execSync( compress_cmd[ i ] );        
+		file = fs.readFileSync( compress_cmd[ i ][ 1 ], 'ascii' );
+		file = zlibCompress.gzipSync( file, { level: 9 } );
+		fs.writeFileSync( compress_cmd[ i ][ 0 ], file, 'ascii' );      
     }
     
     for( var i in generate_cfiles ) {
-        file = fs.readFileSync( generate_cfiles[ i ], 'ascii' );
+        file = fs.readFileSync( generate_cfiles[ i ] );
         cfname = generate_cfiles[ i ].replace( '.gz', '' ).replace( '../compressed/', '' );
         cfile = "\
 /**\r\n\
@@ -198,9 +200,10 @@ function minifyResources( resources )
         cfname = 'webcontent_' + cfname.replace( '.', '_' );
         cfile += "#define " + cfname.toUpperCase() + "_LENGTH    " + file.length + "\r\n\r\n";
         cfile += "static char " + cfname + "[ " + file.length + " ] = { ";
-        
+        buf = new Buffer( file );
+		
         for( var j = 0; j < file.length ; j++ ) {
-            c_code = file.charCodeAt( j );
+            c_code = buf[ j ];
             cfile += "0x" + ( ( "00" + c_code.toString( 16 ) ).substr( -2 ) );
             if( file.length - 1 != j ) cfile += ", ";
         }
