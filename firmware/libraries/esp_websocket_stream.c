@@ -10,11 +10,12 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include "websocket_stream.h"
+#include "esp_websocket_stream.h"
 
 #ifndef WEBSOCKET_PROPRIETARY_RANDOM_IMPLEMENTATION
 #include <time.h>
 #include <stdlib.h>
+
 
 uint32_t __ws_stream_generate_mask( void )
 {
@@ -35,15 +36,15 @@ uint32_t __ws_stream_generate_mask( void )
 
 
 
-
 uint32_t websocket_stream_encode( uint8_t* dest_data, uint8_t* source_data, uint32_t data_length, uint8_t opcode, uint8_t mask_data )
 {
     uint8_t* packet_data;
     uint8_t header_size = 2;
     uint32_t data_index = 0;
     uint32_t data_mask, i;
-    uint8_t* data_mask_p = (uint8_t*) &data_mask;
-
+    uint8_t* data_mask_p = ( uint8_t* ) &data_mask;
+    uint8_t* dest_data_mcpy;
+    
     if( mask_data ) {
         header_size += 4;
         data_mask = __ws_stream_generate_mask();
@@ -61,12 +62,24 @@ uint32_t websocket_stream_encode( uint8_t* dest_data, uint8_t* source_data, uint
     // set length and mask if required
     if( data_length < 0x7E ) {
         dest_data[ 1 ] |= __WS_MASK_LENGTH_BITS & data_length;
-        if( mask_data ) *(( uint32_t * )( dest_data + 2 )) = data_mask;
+        if( mask_data ) {
+          dest_data_mcpy = dest_data + 2;
+          dest_data_mcpy[ 0 ] = data_mask_p[ 0 ];
+          dest_data_mcpy[ 1 ] = data_mask_p[ 1 ];
+          dest_data_mcpy[ 2 ] = data_mask_p[ 2 ];
+          dest_data_mcpy[ 3 ] = data_mask_p[ 3 ];
+        }
     } else if( data_length < 0xFFFF ){
         dest_data[ 1 ] |= 0x7E;
         *(( uint8_t * )( dest_data + 2 )) = ( data_length & 0xFF00 ) >> 8;
         *(( uint8_t * )( dest_data + 3 )) = ( data_length & 0x00FF );
-        if( mask_data ) *(( uint32_t * )( dest_data + 4 )) = data_mask;
+        if( mask_data ) {
+          dest_data_mcpy = dest_data + 4;
+          dest_data_mcpy[ 0 ] = data_mask_p[ 0 ];
+          dest_data_mcpy[ 1 ] = data_mask_p[ 1 ];
+          dest_data_mcpy[ 2 ] = data_mask_p[ 2 ];
+          dest_data_mcpy[ 3 ] = data_mask_p[ 3 ];
+        }
     } else{
         dest_data[ 1 ] |= 0x7F;
         dest_data[ 2 ] = dest_data[ 3 ] = dest_data[ 4 ] = dest_data[ 5 ] = 0x00;
@@ -74,7 +87,13 @@ uint32_t websocket_stream_encode( uint8_t* dest_data, uint8_t* source_data, uint
         *(( uint8_t * )( dest_data + 7 )) = ( data_length & 0x00FF0000UL ) >> 16;
         *(( uint8_t * )( dest_data + 8 )) = ( data_length & 0x0000FF00UL ) >> 8;
         *(( uint8_t * )( dest_data + 9 )) = ( data_length & 0x000000FFUL );
-        if( mask_data ) *(( uint32_t * )( dest_data + 10 )) = data_mask;
+        if( mask_data ) {
+          dest_data_mcpy = dest_data + 10;
+          dest_data_mcpy[ 0 ] = data_mask_p[ 0 ];
+          dest_data_mcpy[ 1 ] = data_mask_p[ 1 ];
+          dest_data_mcpy[ 2 ] = data_mask_p[ 2 ];
+          dest_data_mcpy[ 3 ] = data_mask_p[ 3 ];
+        }
     }
     packet_data = dest_data + header_size;
     // copy the data into the packet
