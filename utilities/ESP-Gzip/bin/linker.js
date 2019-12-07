@@ -136,7 +136,7 @@ function minifyResources( resources )
 						if( resources.js.indexOf( href ) >= 0 ) {
 							if( ( index = generate_compiled.indexOf( href )) >= 0 ) 
 								generate_compiled.splice( index, 1 );
-							minified = minifyJS.minify( sourcePath + href );
+							minified = minifyJS.minify( fs.readFileSync(sourcePath + href, "utf8") );
 							file = file.split( match[ i ] );
 							file = file[ 0 ] + "<script>" + minified.code + "</script>" + file[ 1 ];
 						}
